@@ -23,8 +23,9 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
+import org.gophie.config.ConfigurationManager;
 import org.gophie.io.FileSignature;
 import org.gophie.io.FileSignature.FileSignatureType;
 import org.gophie.net.GopherItem.GopherItemType;
@@ -80,8 +81,9 @@ public class GopherClient {
 
                     /* parse the url and instanciate the client */
                     GopherUrl gopherUrl = new GopherUrl(url);
+                    byte[] gopherRequest = gopherUrl.getRequestBytes(ConfigurationManager
+                        .getNetworkCharset(gopherUrl.getHost(), gopherUrl.getPort()));
                     Socket gopherSocket = new Socket(gopherUrl.getHost(), gopherUrl.getPort());
-                    byte[] gopherRequest = (gopherUrl.getSelector() + "\r\n").getBytes(StandardCharsets.US_ASCII);
                     (new DataOutputStream(gopherSocket.getOutputStream())).write(gopherRequest);
 
                     /* read byte in chunks and report progress */
@@ -95,7 +97,7 @@ public class GopherClient {
                         fileStream.write(data, 0, read);
 
                         /* calculate total bytes read */
-                        totalByteCount = totalByteCount + data.length;
+                        totalByteCount = totalByteCount + read;
 
                         /* report byte count to listener */
                         if(!clientObject.isCancelled()){
@@ -216,8 +218,9 @@ public class GopherClient {
 
             /* parse the url and instanciate the client */
             GopherUrl gopherUrl = new GopherUrl(url);
+            byte[] gopherRequest = gopherUrl.getRequestBytes(ConfigurationManager
+                .getNetworkCharset(gopherUrl.getHost(), gopherUrl.getPort()));
             Socket gopherSocket = new Socket(gopherUrl.getHost(), gopherUrl.getPort());
-            byte[] gopherRequest = (gopherUrl.getSelector() + "\r\n").getBytes(StandardCharsets.US_ASCII);
             (new DataOutputStream(gopherSocket.getOutputStream())).write(gopherRequest);
 
             /* read byte in chunks and report progress */
@@ -230,13 +233,13 @@ public class GopherClient {
             while ((read = socketStream.read(data, 0, data.length)) != -1) {
                 /* check the file signature from the first bytes received */
                 if(totalByteCount == 0){
-                    FileSignature fileSignature = new FileSignature(data);
+                    FileSignature fileSignature = new FileSignature(Arrays.copyOf(data, read));
                     FileSignatureType fileType = fileSignature.getSignatureItemType();
 
                     /* check if the actual file type is an image */
                     if(fileType == FileSignatureType.IMAGE && 
                         (contentType != GopherItemType.IMAGE_FILE 
-                        || contentType != GopherItemType.GIF_FILE)){
+                        && contentType != GopherItemType.GIF_FILE)){
                         /* when the detected file signature is an image, but
                             the original gopher item type defined is neither
                             a generic image nor a gif file, simply fix the
@@ -264,7 +267,7 @@ public class GopherClient {
                     || contentType == GopherItemType.UNKNOWN)
                     && totalByteCount > 200000){
                     /* check if the data is text content or not */
-                    FileSignature largeSignature = new FileSignature(data);
+                    FileSignature largeSignature = new FileSignature(Arrays.copyOf(data, read));
                     FileSignatureType largeType = largeSignature.getSignatureItemType();
 
                     /* throw an exception when this file does not match */
@@ -278,7 +281,7 @@ public class GopherClient {
                 buffer.write(data, 0, read);
 
                 /* calculate total bytes read */
-                totalByteCount = totalByteCount + data.length;
+                totalByteCount = totalByteCount + read;
 
                 /* report byte count to listener */
                 if(!this.isCancelled()){

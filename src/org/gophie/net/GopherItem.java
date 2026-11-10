@@ -225,7 +225,8 @@ public class GopherItem{
                 }
 
                 /* finally append the selector */
-                result += this.selector;
+                /* Menu selectors are literal, unlike percent-escaped URLs. */
+                result += this.selector.replace("%", "%25");
             }
         }
 

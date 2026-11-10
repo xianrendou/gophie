@@ -86,6 +86,7 @@ public class NavigationBar extends JPanel {
         this.backButton.addMouseListener(new MouseAdapter() {
             /* notify the listeners of the move back request */
             public void mouseReleased(MouseEvent evt){
+                if(evt.isConsumed()) return;
                 if(allowNavigateBack == true){
                     for (NavigationInputListener inputListener : inputListenerList){
                         inputListener.backwardRequested();
@@ -113,6 +114,7 @@ public class NavigationBar extends JPanel {
         this.forwardButton.addMouseListener(new MouseAdapter() {
             /* notify the listeners of the forward move request */
             public void mouseReleased(MouseEvent evt){
+                if(evt.isConsumed()) return;
                 if(allowNavigateForward == true){
                     for (NavigationInputListener inputListener : inputListenerList){
                         inputListener.forwardRequested();
@@ -140,6 +142,7 @@ public class NavigationBar extends JPanel {
         this.refreshButton.addMouseListener(new MouseAdapter() {
             /* initiate a refresh or cancel process */
             public void mouseReleased(MouseEvent evt){
+                if(evt.isConsumed()) return;
                 /* request a refresh when currently in network idle */
                 if(isLoadingStatus == false){
                     for (NavigationInputListener inputListener : inputListenerList){
@@ -171,6 +174,7 @@ public class NavigationBar extends JPanel {
         this.homeButton.addMouseListener(new MouseAdapter() {
             /* request navigation to the home page */
             public void mouseReleased(MouseEvent evt){
+                if(evt.isConsumed()) return;
                 /* request to g to home gopher page */
                 for (NavigationInputListener inputListener : inputListenerList){
                     inputListener.homeGopherRequested();
@@ -201,6 +205,7 @@ public class NavigationBar extends JPanel {
         this.downloadButton.addMouseListener(new MouseAdapter() {
             /* notify the listeners of the forward move request */
             public void mouseReleased(MouseEvent evt){
+                if(evt.isConsumed()) return;
                 for (NavigationInputListener inputListener : inputListenerList){
                     inputListener.showDownloadRequested();
                 }
@@ -290,7 +295,8 @@ public class NavigationBar extends JPanel {
     private JTextField createAddressInput(){
         JTextField inputField = new JTextField();
         inputField.setBorder(new EmptyBorder(4,10,6,4));
-        inputField.setFont(ConfigurationManager.getDefaultFont(14f));
+        /* Selectors may contain Chinese text; allow system font fallback. */
+        inputField.setFont(new Font(Font.DIALOG, Font.PLAIN, 14));
         inputField.setForeground(Color.decode(NavigationBar.textColorHex));
         inputField.setOpaque(false);
         this.add(inputField);

@@ -28,13 +28,46 @@ The Linux package is simply a tar.gz-archive with an executable. The executable 
 
 Double-click the Java JAR-file on Windows, Mac and Linux will automatically launch Gophie, if you have Java installed. If you do not have Java installed, you can get it from [java.com/download](java.com/download).
 
+The mouse Back and Forward side buttons (buttons 4 and 5) navigate browsing
+history anywhere in the main window, including over the page and address bar.
+
 ## Building Gophie
 
+
 In order to stay small, reproducable and trustworthy, Gophie was not build with any large-scale IDE, but in plain and simple Java. You can clone this repository and build Gophie with your installed Java SDK yourself. Just run the [make.sh shell script](make.sh) included in this repository.
+
+Use a full **JDK 8 or newer**, including `javac` and `jar`. JDK 8 works;
+JDK 21 is also suitable. Both build scripts produce a Java 8 compatible JAR.
+No Maven, Gradle, or external libraries are required.
 
 ```
 ./make.sh
 ```
+
+On Windows, set `JAVA_HOME` to the JDK directory (or put its `bin` directory
+on `PATH`), then run PowerShell from the repository directory:
+
+```powershell
+.\build.ps1 -Test
+java -jar .\build\Gophie.jar
+```
+
+The tests use a local Gopher server and temporary configuration, leaving your
+personal configuration untouched. `-LiveTest` additionally checks the GBK menu
+at `192.168.1.28:7072`; it requires access to that private network.
+
+To build a single Windows EXE, extract the Windows ZIP of
+[Launch4j 3.50](https://sourceforge.net/projects/launch4j/files/launch4j-3/3.50/),
+then run:
+
+```powershell
+.\package-windows.ps1 -Launch4jHome C:\path\to\launch4j
+```
+
+This rebuilds the JAR and creates `release/windows/Gophie.exe`, including the
+application and its resources. The EXE uses an installed Java 8 or newer runtime;
+it searches `JAVA_HOME`, `PATH`, then the Windows Java registry entries.
+`LAUNCH4J_HOME` can also specify the build tool directory.
 
 The script will create a JAR-file in the build directory for you to run. If you wish to launch Gophie's jar file from the command line, simply use the java cli.
 
@@ -51,12 +84,48 @@ A configuration file named "config.ini" resides in a directory named "Gophie" in
 | Section       | Setting             | Default value        | Description                              |
 | :-------------|:--------------------|:---------------------|:-----------------------------------------|
 | Navigation    | GOPHERHOME          | gopher.floodgap.com  | The GopherHome also known as "Homepage"  |
-| Network       | DEFAULT_CHARSET     | UTF-8                | Charset to use for text encoding         |
+| Network       | DEFAULT_CHARSET     | UTF-8                | Charset for page text, selectors and search queries |
+| Charsets      | host or host:port   | (none)               | Per-server charset override             |
 | Appearance    | PAGE_FONT           | Inconsolata (Custom) | Font for the text in the page view       |
 | Appearance    | PAGE_FONT_SIZE      | 17                   | Font size for the text in the page view  |
 | Appearance    | PAGE_ICON_FONT_SIZE | 10                   | Size of the icon font in the page view   |
 
 All configuration settings are part of a corresponding configuration section. When changing the configuration file, please ensure to put the settings into the section the setting belongs to.
+
+### GBK / Chinese Gopher sites
+
+Gopher responses do not declare a charset, so configure it explicitly. For the
+GBK site `gopher://192.168.1.28:7072/1/wiki.pyg%7Chome/zh`, add the following to
+`%USERPROFILE%\Gophie\config.ini` on Windows, or `~/Gophie/config.ini` elsewhere
+(create the file if needed):
+
+```ini
+[Network]
+DEFAULT_CHARSET = UTF-8
+
+[Charsets]
+192.168.1.28:7072 = GBK
+
+[Appearance]
+PAGE_FONT = Monospaced
+```
+
+Merge these settings into existing sections if you already have a configuration
+file, then restart Gophie. The logical `Monospaced` font lets Java use installed
+Chinese fonts; the bundled Inconsolata font does not include Chinese glyphs.
+Menus, text pages, Chinese selectors and search terms use the selected charset.
+Downloads retain their original bytes. Percent escapes in pasted URLs (such as
+`%7C` for `|`) are decoded before sending the selector; `+` stays literal.
+
+An exact `host:port` override takes priority over a host-only override, followed
+by `DEFAULT_CHARSET` (UTF-8 if absent). Use lowercase hostnames in `[Charsets]`.
+To use GBK for every server, set `DEFAULT_CHARSET = GBK` instead. An unsupported
+charset name is logged to the console and falls back to UTF-8.
+
+`PAGE_FONT` also accepts an installed font's PostScript name, for example
+`MapleMono-NF-CN-Regular`. On Windows, Gophie can load a matching `.ttf` file
+from the per-user Windows Fonts directory when an older Java runtime does not
+enumerate that font.
 
 ## Gopher Protocol Support
 

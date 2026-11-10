@@ -30,9 +30,6 @@ import org.gophie.net.GopherItem.GopherItemType;
  * and Gopher items provided in the underlying Gopher Menu
  */
 public class GopherPage {
-    /* defines the default charset */
-    private static final String GOPHERPAGE_DEFAULT_CHARSET = "UTF-8";
-
     /* local variables */
     private byte[] sourceCode;
     private GopherUrl url;
@@ -131,14 +128,8 @@ public class GopherPage {
      * The gophermap content as a String
      */
     public String getSourceCode(){
-        try{
-            return new String(this.sourceCode, ConfigurationManager.getConfigFile()
-                .getSetting("DEFAULT_CHARSET", "Network", GOPHERPAGE_DEFAULT_CHARSET));
-        }catch(Exception ex){
-            /* drop a quick info on the console when decoding fails */
-            System.out.println("Failed to decode bytes of Gopher Page: " + ex.getMessage());
-            return "";
-        }
+        return new String(this.sourceCode, ConfigurationManager.getNetworkCharset(
+            this.url.getHost(), this.url.getPort()));
     }
 
     /**

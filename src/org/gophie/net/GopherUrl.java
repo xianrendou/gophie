@@ -18,6 +18,9 @@
 
 package org.gophie.net;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.Charset;
+
 public class GopherUrl {
     private int port = 70;
     private String host;
@@ -51,6 +54,40 @@ public class GopherUrl {
      */
     public String getSelector(){
         return this.selector;
+    }
+
+    /**
+     * Builds a wire request, preserving percent-escaped octets and literal +.
+     * Unescaped text (including search terms) uses the server's charset.
+     */
+    public byte[] getRequestBytes(Charset charset){
+        String value = this.hasTypePrefix() ? this.selector.substring(2) : this.selector;
+        ByteArrayOutputStream request = new ByteArrayOutputStream();
+        int start = 0;
+        for(int i = 0; i < value.length(); i++){
+            if(value.charAt(i) == '%' && i + 2 < value.length()){
+                int high = Character.digit(value.charAt(i + 1), 16);
+                int low = Character.digit(value.charAt(i + 2), 16);
+                if(high >= 0 && low >= 0){
+                    byte[] text = value.substring(start, i).getBytes(charset);
+                    request.write(text, 0, text.length);
+                    request.write((high << 4) | low);
+                    i += 2;
+                    start = i + 1;
+                }
+            }
+        }
+        byte[] text = value.substring(start).getBytes(charset);
+        request.write(text, 0, text.length);
+        byte[] selectorBytes = request.toByteArray();
+        for(byte valueByte : selectorBytes){
+            if(valueByte == '\r' || valueByte == '\n'){
+                throw new IllegalArgumentException("A Gopher selector cannot contain CR or LF");
+            }
+        }
+        request.write('\r');
+        request.write('\n');
+        return request.toByteArray();
     }
 
     /**

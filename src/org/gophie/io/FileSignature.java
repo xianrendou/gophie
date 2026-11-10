@@ -102,7 +102,7 @@ public class FileSignature {
         for(int i=0; i<list.length; i++){
             /* get the current signature and check if the content begins with it */
             String signature = list[i];
-            if(hex.substring(0, signature.length()).equals(signature)){
+            if(hex.startsWith(signature)){
                 /* this file is an image */
                 result = true;
             }
@@ -143,7 +143,9 @@ public class FileSignature {
         }
 
         /* check if the file is an mpeg4 container */
-        if(fileHex.substring(8, 16).equals("66747970")){ result = FileSignatureType.MEDIA; }
+        if(fileHex.length() >= 16 && fileHex.substring(8, 16).equals("66747970")){
+            result = FileSignatureType.MEDIA;
+        }
 
         return result;
     }
@@ -156,31 +158,16 @@ public class FileSignature {
      * @return
      */
     private boolean isTextContent(){
-        boolean result = false;
-
-        /* get the hex string for the byte content */
-        String fileHex = this.getContentHexString();
-        
-        /* cound the alphanumeric chars in the data */
-        double alphaNumCharCount = 0;
-        double totalCharCount = 0;
-        for(int c=0; c<fileHex.length(); c = c + 2){
-            int charCode = Integer.parseInt(fileHex.substring(c, c+2),16);
-            if(charCode != 0){
-                if((charCode >= 65 && charCode <= 90) || (charCode >= 97 && charCode <= 122)){
-                    alphaNumCharCount++;
-                }
-                totalCharCount++;
+        /* Text need not contain Latin letters. GBK and UTF-8 use high bytes,
+            but neither uses binary control bytes, even across read chunks. */
+        for(byte value : this.content){
+            int code = value & 0xFF;
+            if((code < 32 && code != '\t' && code != '\n'
+                && code != '\r' && code != '\f') || code == 127){
+                return false;
             }
         }
-
-        /* when the percentage is greater than 20, it is highly likely
-            that this is a text document. Images and binary files mainly 
-            have 15% or less text coverage. */
-        double percent = ((alphaNumCharCount / totalCharCount)*100);
-        if(percent >= 20){ result = true; }
-
-        return result;
+        return true;
     }
 
     /**

@@ -19,6 +19,8 @@
 package org.gophie.ui;
 
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.net.URI;
 import java.util.ArrayList;
 
@@ -122,6 +124,18 @@ public class MainWindow implements NavigationInputListener, GopherClientEventLis
         contentPane.add(this.headerBar, BorderLayout.NORTH);
         contentPane.add(this.pageView, BorderLayout.CENTER);
         contentPane.add(this.navigationBar, BorderLayout.SOUTH);
+
+        /* Listen across all child components, including the page and address bar. */
+        HistoryMouseListener historyMouseListener = new HistoryMouseListener(
+            this.frame, this::backwardRequested, this::forwardRequested);
+        Toolkit.getDefaultToolkit().addAWTEventListener(
+            historyMouseListener, AWTEvent.MOUSE_EVENT_MASK);
+        this.frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent event) {
+                Toolkit.getDefaultToolkit().removeAWTEventListener(historyMouseListener);
+            }
+        });
 
         /* start the window in the center of the screen */
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
@@ -308,7 +322,7 @@ public class MainWindow implements NavigationInputListener, GopherClientEventLis
                         @Override
                         public void searchRequested(String text) {
                             /* execute search through gopher */
-                            String searchQueryText = addressText + "\t" + text;
+                            String searchQueryText = addressText + "\t" + text.replace("%", "%25");
                             fetchGopherContent(searchQueryText,GopherItemType.GOPHERMENU);               
                         }
                     });

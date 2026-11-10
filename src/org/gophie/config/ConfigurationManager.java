@@ -20,6 +20,9 @@ package org.gophie.config;
 
 import java.awt.*;
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
@@ -42,6 +45,25 @@ public class ConfigurationManager{
         }
 
         return ConfigurationManager.configFile;
+    }
+
+    /**
+     * Returns the charset for both requests and responses. A host:port entry
+     * in [Charsets] overrides a host entry, then [Network] DEFAULT_CHARSET.
+     */
+    public static Charset getNetworkCharset(String host, int port){
+        ConfigFile config = getConfigFile();
+        String hostName = host.toLowerCase(Locale.ROOT);
+        String charsetName = config.getSetting(hostName + ":" + port, "Charsets",
+            config.getSetting(hostName, "Charsets",
+                config.getSetting("DEFAULT_CHARSET", "Network", "UTF-8")));
+        try{
+            return Charset.forName(charsetName);
+        }catch(IllegalArgumentException ex){
+            System.out.println("Invalid charset '" + charsetName + "' for "
+                + hostName + ":" + port + "; using UTF-8.");
+            return StandardCharsets.UTF_8;
+        }
     }
 
     /**
@@ -170,6 +192,26 @@ public class ConfigurationManager{
         }else{
             /* system font defined, use that one instead */
             result = new Font(fontName, Font.PLAIN, (int)size);
+            if(result.getFamily().equals(Font.DIALOG) && !fontName.equalsIgnoreCase(Font.DIALOG)){
+                /* Java does not resolve PostScript names in new Font(). */
+                for(Font installedFont : GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts()){
+                    if(installedFont.getPSName().equalsIgnoreCase(fontName)){
+                        return installedFont.deriveFont(Font.PLAIN, size);
+                    }
+                }
+                /* Older Java runtimes do not enumerate per-user Windows fonts. */
+                String localAppData = System.getenv("LOCALAPPDATA");
+                if(localAppData != null){
+                    File fontFile = new File(localAppData, "Microsoft/Windows/Fonts/" + fontName + ".ttf");
+                    if(fontFile.isFile()){
+                        try{
+                            return Font.createFont(Font.TRUETYPE_FONT, fontFile).deriveFont(size);
+                        }catch(Exception ex){
+                            System.out.println("Unable to load font '" + fontName + "': " + ex.getMessage());
+                        }
+                    }
+                }
+            }
         }
     
         return result;

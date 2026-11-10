@@ -73,7 +73,8 @@ public class SearchInput extends JPanel {
         this.searchText.setCaretColor(Color.decode(configFile.getSetting
                 ("SEARCH_TEXTCOLOR", "Appearance", SEARCH_TEXTCOLOR)));
 
-        this.searchText.setFont(ConfigurationManager.getDefaultFont(14f));
+        /* A logical font can fall back to installed Chinese fonts. */
+        this.searchText.setFont(new Font(Font.DIALOG, Font.PLAIN, 14));
         this.add(this.searchText);
 
         this.setVisible(false);
@@ -81,7 +82,7 @@ public class SearchInput extends JPanel {
 
     public void performSearch(String title, SearchInputListener listener){
         this.searchTitle.setText(title);
-        this.searchTitle.setFont(ConfigurationManager.getDefaultFont(14f));
+        this.searchTitle.setFont(new Font(Font.DIALOG, Font.PLAIN, 14));
         this.searchText.addKeyListener(new KeyAdapter() {
             public void keyReleased(KeyEvent e) {
                 /* execute search when the ENTER key is pressed */

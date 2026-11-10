@@ -125,6 +125,7 @@ public class MessageView extends JPanel {
         JLabel closeButton = this.createButton("Close");
         closeButton.addMouseListener(new MouseAdapter() {
             public void mouseReleased(MouseEvent evt){
+                if(evt.isConsumed()) return;
                 setVisible(false);
             }
         });
@@ -155,6 +156,7 @@ public class MessageView extends JPanel {
             final int optionId = i;
             optionButton.addMouseListener(new MouseAdapter() {
                 public void mouseReleased(MouseEvent evt){
+                    if(evt.isConsumed()) return;
                     eventListener.optionSelected(optionId);
                 }
             });

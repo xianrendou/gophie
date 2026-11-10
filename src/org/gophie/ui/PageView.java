@@ -310,6 +310,7 @@ public class PageView extends JScrollPane{
         this.viewPane.addMouseListener(new MouseAdapter(){
             /* handle the popup trigger for this document */
             public void mouseReleased(MouseEvent evt){
+                if(evt.isConsumed()) return;
                 /* get the trigger button for the menu from config
                     (right mouse button id is usually #3) */
                 int menuTriggerButtonId = Integer.parseInt(configFile.getSetting
