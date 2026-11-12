@@ -24,6 +24,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.WeakHashMap;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -65,6 +66,35 @@ public class PageView extends JScrollPane{
 
     /* current page displayed */
     private GopherPage currentPage = null;
+    private final WeakHashMap<GopherPage, Point> scrollPositions = new WeakHashMap<GopherPage, Point>();
+    private Point pendingScrollPosition;
+    private long renderVersion;
+
+    /** Remember positions per history entry, allowing discarded pages to be collected. */
+    private void rememberCurrentPage(GopherPage page){
+        if(this.currentPage != null){
+            this.scrollPositions.put(this.currentPage, this.pendingScrollPosition == null
+                ? this.getViewport().getViewPosition() : new Point(this.pendingScrollPosition));
+        }
+        this.currentPage = page;
+        this.pageMenu.setCurrentPage(page);
+    }
+
+    /** Restore after Swing has laid out the new document, including its row header. */
+    private void restoreScrollPosition(){
+        this.viewPane.setCaretPosition(0);
+        this.headerPane.setCaretPosition(0);
+        Point saved = this.scrollPositions.get(this.currentPage);
+        final Point position = saved == null ? new Point() : new Point(saved);
+        this.pendingScrollPosition = position;
+        final long version = ++this.renderVersion;
+        SwingUtilities.invokeLater(() -> {
+            if(version != this.renderVersion) return;
+            this.validate();
+            this.getViewport().setViewPosition(position);
+            this.pendingScrollPosition = null;
+        });
+    }
 
     /**
      * Adds a new navigation listener for any navigation events
@@ -83,11 +113,14 @@ public class PageView extends JScrollPane{
      * GopherPage with respective content
      */
     public void showGopherContent(GopherPage content){
+        if(!SwingUtilities.isEventDispatchThread()){
+            SwingUtilities.invokeLater(() -> this.showGopherContent(content));
+            return;
+        }
+        this.rememberCurrentPage(content);
+
         /* reset the header to just show nothing */
         this.headerPane.setText("");
-
-        /* set current page to the page menu */
-        this.pageMenu.setCurrentPage(content);
 
         /* check the type of content supplied */
         if(content.getContentType() == GopherItemType.IMAGE_FILE
@@ -145,6 +178,7 @@ public class PageView extends JScrollPane{
             this.viewPane.setContentType("text/plain");
             this.viewPane.setText(content.getSourceCode().replace("\n.\r\n", ""));
         }
+        this.restoreScrollPosition();
     }
 
     /**
@@ -168,11 +202,11 @@ public class PageView extends JScrollPane{
      * The GopherPage to display on this view
      */
     public void showGopherPage(GopherPage page){
-        /* set the current local gopher page */
-        this.currentPage = page;
-
-        /* set current page to the page menu */
-        this.pageMenu.setCurrentPage(page);
+        if(!SwingUtilities.isEventDispatchThread()){
+            SwingUtilities.invokeLater(() -> this.showGopherPage(page));
+            return;
+        }
+        this.rememberCurrentPage(page);
 
         /* create the headers */
         String renderedHeader = "<table cellspacing=\"0\" cellpadding=\"2\">";
@@ -212,8 +246,7 @@ public class PageView extends JScrollPane{
         this.headerPane.setContentType("text/html");
         this.headerPane.setText(renderedHeader+"</table>");
 
-        /* scroll the view pane to the top */
-        this.viewPane.setCaretPosition(0);
+        this.restoreScrollPosition();
     }
 
     /**

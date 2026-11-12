@@ -30,6 +30,7 @@ Double-click the Java JAR-file on Windows, Mac and Linux will automatically laun
 
 The mouse Back and Forward side buttons (buttons 4 and 5) navigate browsing
 history anywhere in the main window, including over the page and address bar.
+Back and Forward restore each menu or text page to its last scroll position.
 
 ## Building Gophie
 

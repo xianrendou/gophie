@@ -29,7 +29,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'JAR packaging failed.' }
     if ($Test -or $LiveTest) {
         New-Item -ItemType Directory -Force class/test | Out-Null
-        & $javac -encoding UTF-8 @target -cp class -d class/test test/org/gophie/net/GopherEncodingTest.java test/org/gophie/ui/HistoryMouseListenerTest.java
+        & $javac -encoding UTF-8 @target -cp class -d class/test test/org/gophie/net/GopherEncodingTest.java test/org/gophie/ui/HistoryMouseListenerTest.java test/org/gophie/ui/PageViewHistoryTest.java test/org/gophie/ui/SearchNavigationTest.java
         if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }
         $testArgs = @()
         if ($LiveTest) { $testArgs = @('--live') }
@@ -37,6 +37,11 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
         & $java '-Djava.awt.headless=true' -cp 'class;class/test;.' org.gophie.ui.HistoryMouseListenerTest
         if ($LASTEXITCODE -ne 0) { throw 'Mouse history tests failed.' }
+        & $java '-Djava.awt.headless=true' -cp 'class;class/test;.' org.gophie.ui.SearchNavigationTest
+        if ($LASTEXITCODE -ne 0) { throw 'Search navigation tests failed.' }
+        # PageView includes an AWT popup menu, which requires a desktop toolkit.
+        & $java '-Djava.awt.headless=false' -cp 'class;class/test;.' org.gophie.ui.PageViewHistoryTest
+        if ($LASTEXITCODE -ne 0) { throw 'Page history position tests failed.' }
     }
     Write-Output 'Built build/Gophie.jar (Java 8 compatible).'
 } finally {

@@ -51,6 +51,7 @@ public class MainWindow implements NavigationInputListener, GopherClientEventLis
 
     /* local network objects */
     private GopherClient gopherClient;
+    private final PageLoadDispatcher pageLoads = new PageLoadDispatcher();
     private DownloadList downloadList;
 
     /* storage with history for browsing */
@@ -517,7 +518,7 @@ public class MainWindow implements NavigationInputListener, GopherClientEventLis
 
         try{
             /* try to execute the thread */
-            this.gopherClient.fetchAsync(addressText,contentType,this);
+            this.gopherClient.fetchAsync(addressText,contentType,this.pageLoads.beginRequest(this));
         }catch(Exception ex){
             /* might throw an ex when thread is interrupted */
             System.out.println("Exception while fetching async: " + ex.getMessage());
@@ -531,6 +532,7 @@ public class MainWindow implements NavigationInputListener, GopherClientEventLis
     public void backwardRequested() {
         /* set the new history position */
         if(this.historyPosition > 0){
+            this.pageLoads.invalidate();
             this.historyPosition--;
 
             /* get the new page from history */
@@ -545,6 +547,7 @@ public class MainWindow implements NavigationInputListener, GopherClientEventLis
     public void forwardRequested() {
         /* set the new history position */
         if(this.historyPosition < (this.history.size()-1)){
+            this.pageLoads.invalidate();
             this.historyPosition++;
 
             /* get the new page from history */
@@ -572,6 +575,7 @@ public class MainWindow implements NavigationInputListener, GopherClientEventLis
      */
     @Override
     public void stopRequested() {
+        this.pageLoads.invalidate();
         /* cancel any current operation */
         this.gopherClient.cancelFetch();
 

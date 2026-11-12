@@ -37,6 +37,7 @@ public class SearchInput extends JPanel {
     JLabel searchIcon;
     JLabel searchTitle;
     JTextField searchText;
+    private SearchInputListener searchListener;
 
     public SearchInput(){
         /* get the config file */
@@ -77,32 +78,29 @@ public class SearchInput extends JPanel {
         this.searchText.setFont(new Font(Font.DIALOG, Font.PLAIN, 14));
         this.add(this.searchText);
 
+        this.searchText.addActionListener(e -> {
+            if(!isVisible() || this.searchText.getText().isEmpty()) return;
+            SearchInputListener listener = this.searchListener;
+            this.searchListener = null;
+            this.setVisible(false);
+            if(listener != null) listener.searchRequested(this.searchText.getText());
+        });
+        this.searchText.addKeyListener(new KeyAdapter() {
+            public void keyReleased(KeyEvent e) {
+                if(e.getKeyCode() == KeyEvent.VK_ESCAPE){
+                    searchListener = null;
+                    setVisible(false);
+                }
+            }
+        });
+
         this.setVisible(false);
     }
 
     public void performSearch(String title, SearchInputListener listener){
         this.searchTitle.setText(title);
         this.searchTitle.setFont(new Font(Font.DIALOG, Font.PLAIN, 14));
-        this.searchText.addKeyListener(new KeyAdapter() {
-            public void keyReleased(KeyEvent e) {
-                /* execute search when the ENTER key is pressed */
-                if(e.getKeyCode() == KeyEvent.VK_ENTER){
-                    JTextField textField = (JTextField) e.getSource();
-
-                    /* only execute search when text is not empty */
-                    if(textField.getText().length() > 0){
-                        listener.searchRequested(textField.getText());
-                    }
-
-                    setVisible(false);
-                }
-                
-                /* just cancel when the user hit ESC */
-                if(e.getKeyCode() == KeyEvent.VK_ESCAPE){
-                    setVisible(false);
-                }
-            }
-        });
+        this.searchListener = listener;
         this.setVisible(true);
         this.searchText.grabFocus();
     }
